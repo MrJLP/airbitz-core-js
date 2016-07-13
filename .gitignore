@@ -1,4 +1,6 @@
 /abc.js
+/abcui.js
+/ui/bundle/js
 /test/fake/apiKey.js
 node_modules
 *.swp
