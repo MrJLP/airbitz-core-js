@@ -1,11 +1,9 @@
-import abc from '../../src/abc-web.js'
 import Constants from './abc-constants.js'
 import React from 'react'
 import { render } from 'react-dom'
 import { Router, Route, IndexRoute, Link, IndexLink, hashHistory } from 'react-router'
 
-// TODO: this needs to be passed in somehow
-var context = abc.Context(window.parent.AIRBITZ_API_KEY);
+var context = window.parent.context;
 var BootstrapButton = React.createClass({
   getInitialState() {
     return {'loading': false};
@@ -24,21 +22,88 @@ var BootstrapButton = React.createClass({
   }
 });
 
-var BootstrapInput = React.createClass({
+var PasswordRuleRow = React.createClass({
+  render(): any {
+    if (this.props.passed) {
+      var imageIcon = (<span className="pull-right glyphicon glyphicon-ok" aria-hidden="true"></span>);
+    } else {
+      var imageIcon = (<span className="pull-right glyphicon glyphicon-remove" aria-hidden="true"></span>);
+    }
+    return (<li>{ this.props.name } {imageIcon}</li>);
+  }
+});
+
+var PasswordRequirementsInput = React.createClass({
   getInitialState() {
-    return { error: null }
+    return {
+      tests: PasswordRequirementsInput.testPassword(''),
+    }
+  },
+  componentDidMount() {
+    $(this.refs.dropdown).hide();
+  },
+  componentWillUnmount() {
+  },
+  statics: {
+    testPassword(password) {
+      if (!password) {
+        password = '';
+      }
+      return [
+        { name: "Must have at least one upper case letter", test: (s) => password.match(/[A-Z]/) != null},
+        { name: "Must have at least one lower case letter", test: (s) => password.match(/[a-z]/) != null},
+        { name: "Must have at least one number",            test: (s) => password.match(/\d/) != null},
+        { name: "Must have at least 10 characters",         test: (s) => password.length >= 10},
+      ].map(r => ({name: r.name, passed: r.test(password) }));
+    }
   },
   render(): any {
-    var errorView = null;
+    return (
+      <div>
+        <input ref="input" type="password"
+            {...this.props}
+            onFocus={this.onFocus}
+            onBlur={this.onBlur}
+            onKeyUp={this.onKeyUp} />
+          <span className="help-block">
+            <ul ref="dropdown" className="list-unstyled">{
+                this.state.tests.map(r => {
+                  return (<PasswordRuleRow key={r.name} name={r.name} passed={r.passed} />);
+                })
+            }</ul>
+          </span>
+      </div>);
+  },
+  onFocus() {
+    $(this.refs.dropdown).fadeIn();
+  },
+  onBlur() {
+    $(this.refs.dropdown).fadeOut();
+  },
+  onKeyUp() {
+    this.setState({'tests': PasswordRequirementsInput.testPassword(this.refs.input.value)});
+  },
+  value() {
+    return this.refs.input.value;
+  }
+});
+
+var BootstrapInput = React.createClass({
+  getInitialState() {
+    return { error:null, loading:null }
+  },
+  render(): any {
     var classes = "form-group ";
-    if (this.state.error) {
-      errorView = (<span className="help-block">{this.state.error}</span>);
+    if (this.state.loading) {
+      var subView = (<span className="help-block"><span className="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span> {this.state.loading}</span>);
+    } else if (this.state.error) {
+      var subView = (<span className="help-block">{this.state.error}</span>);
       classes += "has-error";
     }
     return (
       <div className="{classes}">
         <input ref="input" {...this.props} />
-        {errorView}
+        {subView}
       </div>);
   },
   value() {
@@ -151,6 +216,7 @@ var AbcPasswordLoginForm = React.createClass({
   handleSubmit() {
     var that = this;
     this.refs.signin.setLoading(true);
+    this.refs.form.setState({'error': null});
     context.passwordLogin(this.refs.username.getValue(), this.refs.password.value, function(err, result) {
       if (err) {
         that.refs.form.setState({'error': Constants.errorMap(err, 'Invalid Password')});
@@ -318,9 +384,7 @@ var RegistrationForm = React.createClass({
             </div>
             <div className="col-sm-12">
               <div className="form-group">
-                <div className="input-group">
-                  <input type="password" ref="password" placeholder="password" className="form-control" />
-                </div>
+                <PasswordRequirementsInput ref="password" placeholder="password" className="form-control" />
               </div>
             </div>
             <div className="col-sm-12">
@@ -343,29 +407,29 @@ var RegistrationForm = React.createClass({
     );
   },
   focus() {
-    this.refs.username.setState({'error': null});
+    this.refs.username.setState({error:null, loading:null});
   },
   blur() {
     var that = this;
     var username = that.refs.username.value();
-    console.log(username);
     if (username) {
+      that.refs.username.setState({error:null, loading:'Checking availability...'});
       context.usernameAvailable(username, function(err) {
         if (err) {
-          that.refs.username.setState({'error': 'Username already taken'});
+          that.refs.username.setState({error:'Username already taken', loading:null});
         } else {
-          that.refs.username.setState({'error': null});
+          that.refs.username.setState({error:null, loading:null});
         }
       });
     } else {
-      that.refs.username.setState({'error': null});
+      that.refs.username.setState({error: null});
     }
   },
   handleSubmit() {
     var that = this;
     this.refs.register.setLoading(true);
     var username = this.refs.username.value();
-    context.accountCreate(username, this.refs.password.value, function(err, result) {
+    context.accountCreate(username, this.refs.password.value(), function(err, result) {
       if (err) {
         that.refs.form.setState({'error': Constants.errorMap(err, 'Unable to register at this time.')});
         that.refs.register.setLoading(false);
@@ -417,21 +481,21 @@ var ChangePasswordView = React.createClass({
   render() {
     return (
     <BootstrapModal ref="modal" title="Change Password">
-        <form>
+        <FormView ref="form">
           <div className="row">
             <div className="col-sm-12">
               <div className="form-group">
-                <input type="password" ref="username" placeholder="Current Password" className="form-control" />
+                <input type="password" ref="currentPassword" placeholder="Current Password" className="form-control" />
               </div>
             </div>
             <div className="col-sm-12">
               <div className="form-group">
-                <input type="password" ref="password" placeholder="New Password" className="form-control" />
+                <PasswordRequirementsInput ref="password" placeholder="Password" className="form-control" />
               </div>
             </div>
             <div className="col-sm-12">
               <div className="form-group">
-                  <input type="password" ref="confirm_password" placeholder="Confirm Password" className="form-control" />
+                <BootstrapInput type="password" ref="confirmPassword" placeholder="Confirm Password" className="form-control" onChange={this.comparePasswords} />
               </div>
             </div>
             <div className="col-sm-12">
@@ -442,20 +506,36 @@ var ChangePasswordView = React.createClass({
               </div>
             </div>
           </div>
-        </form>
+        </FormView>
     </BootstrapModal>);
+  },
+  comparePasswords() {
+    var confirmPassword = this.refs.confirmPassword;
+    if (confirmPassword.value() != this.refs.password.value()) {
+      confirmPassword.setState({'error': 'Password mismatch'});
+    } else {
+      confirmPassword.setState({'error': null});
+    }
   },
   handleSubmit() {
     var that = this;
-    this.refs.changeButton.setLoading(true);
-    window.account.passwordSetup(this.refs.password.value, function(err, result) {
-      if (err) {
-      } else {
-      }
-
-      that.refs.changeButton.setLoading(false);
-    });
-    this.refs.modal.close();
+    var account = window.parent.account;
+    if (account.passwordOk(this.refs.currentPassword.value)) {
+      this.refs.changeButton.setLoading(true);
+      window.parent.account.passwordSetup(this.refs.password.value(), function(err, result) {
+        if (err) {
+          that.refs.form.setState({'error': Constants.errorMap(err, 'Invalid Password')});
+        } else {
+          that.refs.modal.close();
+          if (window.parent.exitCallback) {
+              window.parent.exitCallback();
+          }
+        }
+        that.refs.changeButton.setLoading(false);
+      });
+    } else {
+      that.refs.form.setState({'error': 'Incorrect current password'});
+    }
   }
 });
 

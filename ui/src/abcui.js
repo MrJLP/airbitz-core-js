@@ -1,3 +1,4 @@
+import abc from '../../src/abc-web.js'
 
 function createIFrame(path) {
   var frame = document.createElement('iframe');
@@ -20,6 +21,7 @@ function AbcUi(args) {
 
 function InnerAbcUi(args) {
   window.AIRBITZ_API_KEY = args['key'];
+  window.context = this.context = abc.Context(window.AIRBITZ_API_KEY);
   if (args['bundle-path']) {
     this.bundlePath = args['bundle-path'];
   } else {
@@ -39,6 +41,10 @@ InnerAbcUi.prototype.login = function(callback) {
     removeIFrame(frame);
   };
 };
+
+InnerAbcUi.prototype.context = function() {
+  return this.context;
+}
 
 InnerAbcUi.prototype.recovery = function(callback) {
   var frame = createIFrame(this.bundlePath + '/index.html#/recovery');
@@ -62,7 +68,6 @@ InnerAbcUi.prototype.manageAccount = function(account, callback) {
   var frame = createIFrame(this.bundlePath + '/index.html#/account/');
   window.exitCallback = function() {
     removeIFrame(frame);
-    window.account = null;
   };
 };
 
