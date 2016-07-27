@@ -28,12 +28,12 @@
     "mocha": "^2.4.0",
     "webpack": "^2.0.0beta",
     "standard": "^3.0.0",
-    "node-getopt": "^0.2.3"
+    "node-getopt": "^0.2.3",
     "react": "^15.2.1",
     "react-addons-css-transition-group": "^15.2.0",
     "react-addons-test-utils": "^15.2.0",
     "react-dom": "^15.2.0",
-    "react-router": "^2.5.2",
+    "react-router": "^2.5.2"
   },
   "scripts": {
     "pretest": "standard src/*.js src/login/*.js test/*.js test/fake/*.js",

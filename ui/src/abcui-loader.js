@@ -437,7 +437,7 @@ var ChangePasswordView = React.createClass({
             <div className="col-sm-12">
               <div className="form-group">
                 <span className="input-group-btn">
-                  <BootstrapButton ref="register" onClick={this.handleSubmit}>Save</BootstrapButton>
+                  <BootstrapButton ref="changeButton" onClick={this.handleSubmit}>Save</BootstrapButton>
                 </span>
               </div>
             </div>
@@ -446,6 +446,15 @@ var ChangePasswordView = React.createClass({
     </BootstrapModal>);
   },
   handleSubmit() {
+    var that = this;
+    this.refs.changeButton.setLoading(true);
+    window.account.passwordSetup(this.refs.password.value, function(err, result) {
+      if (err) {
+      } else {
+      }
+
+      that.refs.changeButton.setLoading(false);
+    });
     this.refs.modal.close();
   }
 });
