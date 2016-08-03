@@ -206,7 +206,7 @@ var AbcPasswordLoginForm = React.createClass({
         <div className="row">
           <div className="col-sm-12 text-center">
             <div className="form-group">
-              <button type="button" className="btn">Forgot Password</button>
+              <Link className="btn btn-default" to={`/recovery`}>Forgot Password</Link>
             </div>
           </div>
         </div>
@@ -295,7 +295,7 @@ var AbcPinLoginForm = React.createClass({
     this.refs.signin.setLoading(true);
     context.pinLogin(this.refs.username.getValue(), this.refs.pin.value, function(err, result) {
       if (err) {
-        that.refs.form.setState({'error': Constants.errorMap(err, 'Failed to login with password')});
+        that.refs.form.setState({'error': Constants.errorMap(err, 'Failed to login with PIN.')});
       } else {
         that.props.onSuccess(result);
       }
@@ -589,13 +589,13 @@ var SetupRecoveryView = React.createClass({
             </div>
             <div className="col-sm-12">
               <div className="form-group">
-                <label for="question1">Question 1 Text</label>
+                <label htmlFor="question1">Question 1 Text</label>
                 <input type="text" id="question1" ref="question1" placeholder="Question 1 Answer" className="form-control" />
               </div>
             </div>
             <div className="col-sm-12">
               <div className="form-group">
-                <label for="question2">Question 2 Text</label>
+                <label htmlFor="question2">Question 2 Text</label>
                 <input type="text" id="question2"  ref="question2" placeholder="Question 2 Answer" className="form-control" />
               </div>
             </div>
@@ -612,6 +612,53 @@ var SetupRecoveryView = React.createClass({
   },
   handleSubmit() {
     this.refs.modal.close();
+    if (window.parent.exitCallback) {
+        this.close();
+        window.parent.exitCallback();
+    }
+  }
+});
+
+var ForgotPasswordForm = React.createClass({
+  render() {
+    return (
+    <BootstrapModal ref="modal" title="Change Recovery Information">
+        <form>
+          <div className="row">
+            <div className="col-sm-12">
+              <div className="form-group">
+                <label>Recovery Token information...</label>
+                <input type="password" ref="username" placeholder="Recovery Token" className="form-control" />
+              </div>
+            </div>
+            <div className="col-sm-12">
+              <div className="form-group">
+                <label htmlFor="question1">Question 1 Text</label>
+                <input type="text" id="question1" ref="question1" placeholder="Question 1 Answer" className="form-control" />
+              </div>
+            </div>
+            <div className="col-sm-12">
+              <div className="form-group">
+                <label htmlFor="question2">Question 2 Text</label>
+                <input type="text" id="question2"  ref="question2" placeholder="Question 2 Answer" className="form-control" />
+              </div>
+            </div>
+            <div className="col-sm-12">
+              <div className="form-group">
+                <span className="input-group-btn">
+                  <BootstrapButton ref="register" onClick={this.handleSubmit}>Save</BootstrapButton>
+                </span>
+              </div>
+            </div>
+          </div>
+        </form>
+    </BootstrapModal>);
+  },
+  handleSubmit() {
+    this.refs.modal.close();
+    if (window.parent.exitCallback) {
+        window.parent.exitCallback();
+    }
   }
 });
 
@@ -697,6 +744,7 @@ render((
       <IndexRoute component={Index} />
       <Route path="login" component={LoginForm} />
       <Route path="register" component={RegistrationForm} />
+      <Route path="recovery" component={ForgotPasswordForm} />
       <Route path="account" component={ManageAccountView} />
       <Route path="account/changepassword" component={ChangePasswordView} />
       <Route path="account/changepin" component={ChangePinView} />
