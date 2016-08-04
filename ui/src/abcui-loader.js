@@ -548,21 +548,21 @@ var ChangePinView = React.createClass({
             <div className="col-sm-12">
               <div className="form-group">
                 <div className="input-group">
-                    <input type="password" ref="username" placeholder="Current Password" className="form-control" />
+                    <input type="password" ref="currentPassword" placeholder="Current Password" className="form-control" />
                 </div>
               </div>
             </div>
             <div className="col-sm-12">
               <div className="form-group">
                 <div className="input-group">
-                  <input type="password" ref="password" placeholder="New PIN" className="form-control" maxLength="4" />
+                  <input type="password" ref="pin" placeholder="New PIN" className="form-control" maxLength="4" />
                 </div>
               </div>
             </div>
             <div className="col-sm-12">
               <div className="form-group">
                 <span className="input-group-btn">
-                  <BootstrapButton ref="register" onClick={this.handleSubmit}>Save</BootstrapButton>
+                  <BootstrapButton ref="changeButton" onClick={this.handleSubmit}>Save</BootstrapButton>
                 </span>
               </div>
             </div>
@@ -571,7 +571,24 @@ var ChangePinView = React.createClass({
     </BootstrapModal>);
   },
   handleSubmit() {
-    this.refs.modal.close();
+    var that = this;
+    var account = window.parent.account;
+    if (account.passwordOk(this.refs.currentPassword.value)) {
+      this.refs.changeButton.setLoading(true);
+      window.parent.account.pinSetup(this.refs.pin.value, function(err, result) {
+        if (err) {
+          that.refs.form.setState({'error': Constants.errorMap(err, 'Invalid Password')});
+        } else {
+          that.refs.modal.close();
+          if (window.parent.exitCallback) {
+              window.parent.exitCallback();
+          }
+        }
+        that.refs.changeButton.setLoading(false);
+      });
+    } else {
+      that.refs.form.setState({'error': 'Incorrect current password'});
+    }
   }
 });
 
